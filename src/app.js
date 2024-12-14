@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const { takeScreenshot, finalWidth, finalHeight } = require('./services/screenshotService');
 const { uploadToS3 } = require('./services/s3Uploader');
 const { log } = require('./utils/logger');

@@ -1,28 +1,35 @@
-const { takeScreenshot } = require('../src/services/screenshotService');
+const { takeScreenshot, finalWidth, finalHeight } = require('../src/services/screenshotService');
 const { uploadToS3 } = require('../src/services/s3Uploader');
 const urls = require('../src/config/urls.json');
 const path = require('path');
 const fs = require('fs');
-
-// Configuration
-const SCREENSHOTS_DIR = '/tmp/screenshots';
+const { s3BucketName } = require('../src/config/config.json');
 
 exports.handler = async () => {
-    try {
-        if (!fs.existsSync(SCREENSHOTS_DIR)) {
-            fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
-        }
+    const SCREENSHOTS_DIR = '/tmp/screenshots';
 
+    if (!fs.existsSync(SCREENSHOTS_DIR)) {
+        fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+    }
+
+    try {
         for (const { url, websiteName } of urls) {
-            const timestamp = Date.now();
-            const filePath = path.join(SCREENSHOTS_DIR, `${websiteName}-${timestamp}.png`);
+            const sanitizedName = sanitizeWebsiteName(websiteName);
+            const timestamp = formatTimestamp();
+            const fileName = `${sanitizedName}-${finalWidth}x${finalHeight}-${timestamp}.jpg`;
+            const filePath = path.join(SCREENSHOTS_DIR, fileName);
 
             console.log(`Capturing screenshot for ${url}`);
             await takeScreenshot(url, filePath);
 
-            const s3Key = `screenshots/${websiteName}-${timestamp}.png`;
-            console.log(`Uploading ${filePath} to S3`);
-            await uploadToS3(filePath, s3Key);
+            // Upload to S3
+            if (s3BucketName) {
+                const s3Key = `screenshots/${fileName}`;
+                console.log(`Uploading ${filePath} to S3`);
+                await uploadToS3(filePath, s3Key);
+            } else {
+                console.log('No S3 bucket configured, screenshot saved locally to /tmp.');
+            }
         }
 
         return {
@@ -37,3 +44,24 @@ exports.handler = async () => {
         };
     }
 };
+
+/**
+ * Formats timestamp as YYYYMMDD-HHMM (no seconds)
+ */
+function formatTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}${month}${day}-${hours}${minutes}`;
+}
+
+/**
+ * Converts the websiteName to lowercase and replaces spaces with underscores.
+ * "Example Site" -> "example_site"
+ */
+function sanitizeWebsiteName(name) {
+    return name.toLowerCase().replace(/\s+/g, '_');
+}

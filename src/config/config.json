@@ -1,5 +1,5 @@
 {
-    "s3BucketName": "your-bucket-id",
+    "s3BucketName": "ts-ecomm-screenshot",
     "browserWidth": 1600,
     "browserHeight": 3200
 }

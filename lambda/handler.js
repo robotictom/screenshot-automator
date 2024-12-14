@@ -1,9 +1,21 @@
 const { takeScreenshot, finalWidth, finalHeight } = require('../src/services/screenshotService');
 const { uploadToS3 } = require('../src/services/s3Uploader');
-const urls = require('../src/config/urls.json');
 const path = require('path');
 const fs = require('fs');
-const { s3BucketName } = require('../src/config/config.json');
+
+// check runtime flags
+const args = process.argv.slice(2);
+const urlFileArg = args.find(arg => arg.startsWith('--urls='));
+const urlFileName = urlFileArg ? urlFileArg.split('=')[1] : 'urls.json';
+
+const urlsFilePath = path.join(__dirname, 'config', urlFileName);
+if (!fs.existsSync(urlsFilePath)) {
+    throw new Error(`URLs file not found: ${urlsFilePath}`);
+}
+
+const urls = require(urlsFilePath);
+
+const { s3BucketName } = require('./config/config.json');
 
 exports.handler = async () => {
     const SCREENSHOTS_DIR = '/tmp/screenshots';

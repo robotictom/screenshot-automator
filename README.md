@@ -1,148 +1,193 @@
-# Website Screenshot Automation
+# Screenshot Automation
 
-This project automates capturing screenshots of specified URLs using Puppeteer. By default, it saves screenshots locally, but it can optionally upload them to an AWS S3 bucket if run with a `--upload` flag. Browser dimensions are configurable and default to `1366x768` if not specified.
+This project automates the process of capturing screenshots of websites and uploading them to an AWS S3 bucket. It supports both local development and serverless deployment to AWS Lambda. 
+
+Key features include:
+- Support for **local development** using a custom Chromium installation.
+- **Dynamic configuration** via `.env` files.
+- Ability to specify the **URLs file** at runtime.
+- **AWS Lambda-compatible** with configurable Chromium through a Lambda Layer.
+- Scheduled execution via AWS EventBridge.
+
+---
+
+## Table of Contents
+1. [Requirements](#requirements)
+2. [Setup Instructions](#setup-instructions)
+   - [Local Development](#local-development)
+   - [AWS Lambda Deployment](#aws-lambda-deployment)
+3. [Features](#features)
+4. [Usage](#usage)
+   - [Running Locally](#running-locally)
+   - [Running in AWS Lambda](#running-in-aws-lambda)
+5. [Environment Variables](#environment-variables)
+6. [Using EventBridge to Trigger Lambda](#using-eventbridge-to-trigger-lambda)
+7. [FAQ](#faq)
+
+---
+
+## Requirements
+- Node.js (16.x or higher)
+- AWS CLI installed and configured
+- AWS Lambda (if deploying serverlessly)
+- `npx` (bundled with Node.js)
+- A valid S3 bucket in AWS
+
+---
+
+## Setup Instructions
+
+### Local Development
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/your-repo/screenshot-automation.git
+   cd screenshot-automation
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Install Chromium**:
+   Use `npx` to install a local Chromium binary compatible with Puppeteer:
+   ```bash
+   npx @puppeteer/browsers install chromium@latest --path /tmp/localChromium
+   ```
+
+   The output path for the Chromium binary will be needed for the `.env` file.
+
+4. **Set Up `.env`**:
+   Create a `.env` file in the root directory and configure:
+   ```plaintext
+   IS_LOCAL=true
+   LOCAL_CHROMIUM=/tmp/localChromium/chromium/mac-1396327/chrome-mac/Chromium.app/Contents/MacOS/Chromium
+   S3_BUCKET_NAME=your-s3-bucket-name
+   AWS_REGION=us-east-1
+   ```
+
+5. **Add URL Files**:
+   Define your list of websites in a file (e.g., `urls.json`) under `src/config`:
+   ```json
+   [
+       {
+           "url": "https://example.com",
+           "websiteName": "Example Site"
+       }
+   ]
+   ```
+
+---
+
+### AWS Lambda Deployment
+
+1. **Prepare Lambda Layer**:
+   - Create a `lambda-layer/nodejs` directory.
+   - Run:
+     ```bash
+     cd lambda-layer/nodejs
+     npm init -y
+     npm install puppeteer-core @sparticuz/chromium
+     ```
+   - Zip the `nodejs` folder:
+     ```bash
+     cd ..
+     zip -r layer.zip nodejs
+     ```
+
+   - Upload the layer to AWS Lambda under **Layers**.
+
+2. **Package the Lambda Function**:
+   - From the project root:
+     ```bash
+     zip -r lambda.zip . -x "node_modules/*" "logs/*" "screenshots/*"
+     ```
+
+   - Upload `lambda.zip` to AWS Lambda as your function code.
+
+3. **Configure Lambda**:
+   - Attach the Lambda Layer created above.
+   - Add the required environment variables (see [Environment Variables](#environment-variables)).
+   - Set the handler to `lambda/handler.handler`.
+
+4. **Test the Lambda Function**:
+   - Use the AWS Lambda console to test or trigger the function via EventBridge (see [Using EventBridge](#using-eventbridge-to-trigger-lambda)).
+
+---
 
 ## Features
-- Take screenshots using Puppeteer with configurable browser dimensions.
-- Default dimensions (1366x768) can be overridden by values in `src/config/config.json`.
-- Save screenshots locally by default.
-- Optional S3 upload when run with `--upload`.
-- Filenames include the chosen dimensions and timestamp:  
-  `websiteName-widthxheight-timestamp.png`
 
----
+### 1. **Run Locally or in AWS Lambda**
+The project can dynamically switch between local development and AWS Lambda environments using environment variables.
 
-## Prerequisites
-
-### System Requirements
-- **Node.js**: Version 16 or higher
-- **npm**: Comes with Node.js
-- **AWS CLI** (optional for local runs): For setting up AWS credentials
-
-### Dependencies
-- `puppeteer`: Controls headless Chrome for screenshots.
-- `aws-sdk`: Interacts with AWS S3.
-- `fs`, `path`: Node.js built-in modules for file operations and paths.
-
-### AWS Configuration (for S3 upload)
-1. **Create an S3 Bucket**:
-   - Log in to the AWS Management Console.
-   - Navigate to **S3** and create a new bucket (e.g. `my-screenshot-bucket`).
-   - Note the bucket name for `src/config/config.json`.
-
-2. **Set Up AWS Credentials**:
-   - Run `aws configure` locally.
-   - Provide your AWS Access Key ID, Secret Access Key, region, and output format.
-
-3. **IAM Role for Lambda (Optional)**:
-   - If deploying to Lambda, create an IAM role with permissions to access S3 and attach it to your Lambda function.
-
----
-
-## Project Structure
-
-```
-.
-├── src/
-│   ├── config/
-│   │   ├── config.json     # Global configuration (S3 bucket name, browser settings)
-│   │   ├── urls.json       # List of URLs to capture
-│   ├── services/
-│   │   ├── screenshotService.js # Puppeteer logic
-│   │   ├── s3Uploader.js        # S3 upload logic
-│   ├── utils/
-│   │   ├── logger.js            # Logging utility
-│   ├── app.js                   # Entry point for local runs
-├── lambda/
-│   ├── handler.js               # AWS Lambda entry point
-├── screenshots/                 # Local screenshots storage
-├── package.json
-└── README.md
-```
-
----
-
-## Configuration
-
-### `src/config/config.json`
-```json
-{
-    "s3BucketName": "your-s3-bucket-name",
-    "browserWidth": 1600,
-    "browserHeight": 900
-}
-```
-- Omit `browserWidth` and `browserHeight` to use the default 1366x768.
-
-### `src/config/urls.json`
-```json
-[
-    { "url": "https://example.com", "websiteName": "example" },
-    { "url": "https://example2.com", "websiteName": "example2" }
-]
-```
-
----
-
-## Running the Script Locally
-
-### 1. Install Dependencies
+### 2. **Dynamic URL Input**
+The URLs file can be specified at runtime using the `--urls` flag:
 ```bash
-npm install
+node src/app.js --urls=urls.blogs.json
 ```
+If no file is specified, it defaults to `urls.json`.
 
-### 2. Run Without Uploading (Local Only)
-```bash
-node src/app.js
-```
-Screenshots will be saved in `screenshots/` directory.  
-Files will be named like `example-1600x900-1699999999999.png`.
+### 3. **Environment Configuration**
+Configuration via `.env` allows flexibility without hardcoding sensitive details.
 
-### 3. Run With Upload to S3
-```bash
-node src/app.js --upload
-```
-This uploads the screenshots to the S3 bucket specified in `config.json`.
+### 4. **Lambda-Compatible Chromium**
+The Lambda Layer uses `@sparticuz/chromium` for headless browsing.
 
 ---
 
-## Deploying to AWS Lambda
+## Usage
 
-### 1. Package the Project
-```bash
-zip -r lambda.zip lambda/ src/ node_modules/
-```
+### Running Locally
+1. Ensure `.env` is set with `IS_LOCAL=true` and the correct `LOCAL_CHROMIUM` path.
+2. Run the script:
+   ```bash
+   node src/app.js --urls=urls.blogs.json
+   ```
 
-### 2. Deploy to Lambda
-- Upload `lambda.zip` via the AWS Lambda console.
-- Set the handler to `lambda/handler.handler`.
-- Assign an IAM role with appropriate permissions (e.g., S3 access).
-
-### 3. Trigger the Lambda
-- Run manually or schedule it using EventBridge (e.g., twice a week).
+### Running in AWS Lambda
+1. Deploy the function and layer as described in [AWS Lambda Deployment](#aws-lambda-deployment).
+2. Trigger the function via EventBridge or manually.
 
 ---
 
-## Notes
-- If you want to customize dimensions, edit `browserWidth` and `browserHeight` in `config.json`.
-- If they’re not defined, the script defaults to `1366x768`.
-- Check AWS credentials and IAM policies for proper S3 and Lambda access.
-- Clean up old screenshots in S3 periodically to reduce storage costs.
+## Environment Variables
+
+| Variable           | Description                                                                                  | Default          |
+|--------------------|----------------------------------------------------------------------------------------------|------------------|
+| `IS_LOCAL`         | Set to `true` for local development to use a local Chromium binary.                          | `false`          |
+| `LOCAL_CHROMIUM`   | Path to the locally installed Chromium binary (e.g., `/tmp/localChromium/...`).              | `null`           |
+| `S3_BUCKET_NAME`   | Name of the S3 bucket for uploading screenshots.                                             | `null`           |
+| `AWS_REGION`       | AWS region for the S3 bucket and other services.                                             | `us-east-1`      |
 
 ---
 
-## Troubleshooting
-- **Missing AWS Credentials**: Ensure `aws configure` is set up or use IAM roles.
-- **Dependency Issues on Lambda**: Use a Lambda-compatible Chromium if required.
+## Using EventBridge to Trigger Lambda
+
+1. **Set Up an EventBridge Rule**:
+   - Create a rule to trigger the Lambda function on a schedule (e.g., daily).
+   - Add a custom JSON payload to specify the `urls` file:
+     ```json
+     {
+       "urls": "urls.blogs.json"
+     }
+     ```
+
+2. **Update Lambda Code**:
+   - Ensure the Lambda function reads the `urls` file name from the event payload.
+
+3. **Monitor Execution**:
+   - Check CloudWatch logs to confirm successful execution and troubleshoot issues.
 
 ---
 
-## Future Enhancements
-- Add retries for failed screenshots.
-- Add notification on completion or failure.
-- More granular IAM policies and parameterized environment variables.
+## FAQ
 
----
+### Why does the Chromium binary fail on Lambda?
+Ensure you’re using `@sparticuz/chromium` in a Lambda Layer and not including it in your main function package.
 
-## License
-This project is open-source and available under the MIT License.
+### How can I debug issues locally?
+Use the `IS_LOCAL=true` configuration to test with a local Chromium binary.
+
+### How do I add more URLs to the script?
+Create a new JSON file (e.g., `urls.new.json`) and specify it at runtime using the `--urls` flag or in the EventBridge payload.

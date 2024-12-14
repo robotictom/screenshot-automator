@@ -83,33 +83,35 @@ Key features include:
 ### AWS Lambda Deployment
 
 1. **Prepare Lambda Layer**:
-   - Create a `lambda-layer/nodejs` directory.
+   - Download latest @sparticuz/chromium release from: https://github.com/Sparticuz/chromium/releases
+   - Follow direction
    - Run:
      ```bash
-     cd lambda-layer/nodejs
-     npm init -y
-     npm install puppeteer-core @sparticuz/chromium
+     bucketName="chromiumUploadBucket" && \
+aws s3 cp chromium-v131.0.1-layer.zip "s3://${bucketName}/chromiumLayers/chromium-v131.0.1-layer.zip" && \
+aws lambda publish-layer-version --layer-name chromium --description "Chromium v131.0.1" --content "S3Bucket=${bucketName},S3Key=chromiumLayers/chromium-v131.0.1-layer.zip" --compatible-runtimes nodejs22.x --compatible-architectures x86_64
      ```
-   - Zip the `nodejs` folder:
-     ```bash
-     cd ..
-     zip -r layer.zip nodejs
-     ```
-
    - Upload the layer to AWS Lambda under **Layers**.
+   - make sure runtime is compatable - nodejs22.x with lamba 
 
 2. **Package the Lambda Function**:
    - From the project root:
      ```bash
-     zip -r lambda.zip . -x "node_modules/*" "logs/*" "screenshots/*"
+     zip -r dist/lambda.zip . -x ".git/*" "dist/*" "logs/*" "screenshots/*" ".env"
      ```
 
-   - Upload `lambda.zip` to AWS Lambda as your function code.
+   - Upload `dist/lambda.zip` to AWS Lambda as your function code.
+      ```bash
+      aws s3 mv dist/lambda.zip s3://ts-ecomm-screenshot/lambda-layer/lambda.zip
+      ```
 
 3. **Configure Lambda**:
    - Attach the Lambda Layer created above.
    - Add the required environment variables (see [Environment Variables](#environment-variables)).
-   - Set the handler to `lambda/handler.handler`.
+   - Increase memory to 1536
+   - Increase tinmeout to 5 min (to be adjusted based on number of URLs)
+   - Under Runtime Settings, Set the handler to `lambda/handler.handler`.
+   - Assign IAM permissions for S3 if new user AmazonS3FullAccess
 
 4. **Test the Lambda Function**:
    - Use the AWS Lambda console to test or trigger the function via EventBridge (see [Using EventBridge](#using-eventbridge-to-trigger-lambda)).

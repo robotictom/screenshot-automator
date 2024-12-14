@@ -15,7 +15,7 @@ exports.handler = async (event) => {
 
     const urls = require(urlsFilePath);
 
-    const { s3BucketName } = require('./config/config.json');
+    const { s3BucketName } = require('../src/config/config.json');
 
     if (!fs.existsSync(SCREENSHOTS_DIR)) {
         fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });

@@ -1,17 +1,21 @@
 {
     "name": "screenshot-automation",
     "version": "1.0.0",
-    "description": "A script for automating screenshots of URLs and uploading to AWS S3.",
+    "description": "A Node.js application to capture website screenshots and upload to S3.",
     "main": "src/app.js",
     "scripts": {
       "start": "node src/app.js",
-      "build:lambda": "zip -r dist/lambda.zip . -x \"node_modules/*\" \"logs/*\" \"screenshots/*\"",
-      "deploy:lambda": "aws lambda update-function-code --function-name my-lambda-function --zip-file fileb://dist/lambda.zip"
+      "build:lambda": "zip -r dist/lambda.zip . -x \"node_modules/*\" \"logs/*\" \"screenshots/*\""
     },
     "dependencies": {
-      "puppeteer": "^22.11.1",
       "@aws-sdk/client-s3": "^3.0.0",
-      "dotenv": "^16.3.1" 
-    }
+      "puppeteer-core": "^23.10.4",      
+      "dotenv": "^16.3.1"
+    },
+    "devDependencies": {
+      "@sparticuz/chromium": "131.0.1",
+      "serverless": "^3.27.0"      
+    },
+    "license": "MIT"
   }
   

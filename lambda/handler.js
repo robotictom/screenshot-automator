@@ -3,22 +3,19 @@ const { uploadToS3 } = require('../src/services/s3Uploader');
 const path = require('path');
 const fs = require('fs');
 
-// check runtime flags
-const args = process.argv.slice(2);
-const urlFileArg = args.find(arg => arg.startsWith('--urls='));
-const urlFileName = urlFileArg ? urlFileArg.split('=')[1] : 'urls.json';
-
-const urlsFilePath = path.join(__dirname, 'config', urlFileName);
-if (!fs.existsSync(urlsFilePath)) {
-    throw new Error(`URLs file not found: ${urlsFilePath}`);
-}
-
-const urls = require(urlsFilePath);
-
-const { s3BucketName } = require('./config/config.json');
-
-exports.handler = async () => {
+exports.handler = async (event) => {
     const SCREENSHOTS_DIR = '/tmp/screenshots';
+
+    // handle payload 
+    const urlFileName = event.urls || 'urls.json';
+    const urlsFilePath = path.join(__dirname, '../src/config', urlFileName);
+    if (!fs.existsSync(urlsFilePath)) {
+        throw new Error(`URLs file not found: ${urlsFilePath}`);
+    }
+
+    const urls = require(urlsFilePath);
+
+    const { s3BucketName } = require('./config/config.json');
 
     if (!fs.existsSync(SCREENSHOTS_DIR)) {
         fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });

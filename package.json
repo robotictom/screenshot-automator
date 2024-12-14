@@ -4,18 +4,17 @@
     "description": "A Node.js application to capture website screenshots and upload to S3.",
     "main": "src/app.js",
     "scripts": {
-      "start": "node src/app.js",
-      "build:lambda": "zip -r dist/lambda.zip . -x \"node_modules/*\" \"logs/*\" \"screenshots/*\""
+        "start": "node src/app.js",
+        "build:lambda": "zip -r dist/lambda.zip . -x \"node_modules/*\" \"logs/*\" \"screenshots/*\""
     },
     "dependencies": {
-      "@aws-sdk/client-s3": "^3.0.0",
-      "puppeteer-core": "^23.10.4",      
-      "dotenv": "^16.3.1"
+        "@aws-sdk/client-s3": "^3.0.0",
+        "dotenv": "^16.3.1",
+        "puppeteer-core": "^23.10.4"
     },
     "devDependencies": {
-      "@sparticuz/chromium": "131.0.1",
-      "serverless": "^3.27.0"      
+        "@sparticuz/chromium": "^131.0.1",
+        "serverless": "^3.27.0"
     },
     "license": "MIT"
-  }
-  
+}

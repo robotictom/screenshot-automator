@@ -15,9 +15,11 @@ const finalHeight = browserHeight || DEFAULT_HEIGHT;
  */
 async function takeScreenshot(url, filePath) {
     const browser = await puppeteer.launch({
-        executablePath: await chromium.executablePath(),
-        args: chromium.args,
-        headless: chromium.headless,
+        executablePath: process.env.IS_LOCAL
+          ? process.env.LOCAL_CHROMIUM
+          : await chromium.executablePath(),
+        args: process.env.IS_LOCAL ? puppeteer.defaultArgs() : chromium.args,
+        headless: process.env.IS_LOCAL ? false : chromium.headless,
         defaultViewport: {
             width: finalWidth,
             height: finalHeight

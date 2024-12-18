@@ -29,21 +29,56 @@ async function takeScreenshot(url, filePath) {
     const page = await browser.newPage();
 
     try {
-        await page.goto(url, { waitUntil: 'domcontentloaded' });
+        await page.goto(url, { waitUntil: 'networkidle2' });
 
         await page.evaluate(() => {
+
+            // attentive
             const attentiveOverlay = document.querySelector('#attentive_overlay');
             if (attentiveOverlay) attentiveOverlay.remove();
 
+            // onetrustmodal
             const onetrustConsent = document.querySelector('#onetrust-consent-sdk');
             if (onetrustConsent) onetrustConsent.remove();
+            
+            // nytimes
+            const complianceOverlay = document.querySelector('#complianceOverlay');
+            if (complianceOverlay) complianceOverlay.remove();
+
+            //cnn
+            const adSlotHeaderWrapper = document.querySelector('.ad-slot-header__wrapper');
+            if (adSlotHeaderWrapper) adSlotHeaderWrapper.remove();
+
+            // klavio pop up
+            const klavio = document.querySelector('.needsclick[role="dialog"]');
+            if (klavio) klavio.remove();
+
+            // shopbop
+            const openDialog = document.querySelector('dialog[open]');
+            if (openDialog) openDialog.remove();
+
+            // ltk
+            const ltkpopup = document.querySelectorAll('div[id^="ltkpopup-"]');
+            if (ltkpopup) ltkpopup.forEach(element => {
+                element.remove()
+            });           
+
+            // tory burch
+            const emailSignUpDrawer = document.querySelector('div[data-id="emailSignUpDrawer"]');
+            if (emailSignUpDrawer) emailSignUpDrawer.remove();
+
+            // donna karan
+            const dkIntlPopup = document.querySelector('#md-app-embed__modal');
+            if (dkIntlPopup) dkIntlPopup.remove();
+
         });
 
         await page.screenshot({ path: filePath, type: 'jpeg', fullPage: false });
         console.log(`Screenshot saved to ${filePath}`);
+        return { success: true, message: `Screenshot captured for ${url}`, filePath };
     } catch (error) {
         console.error(`Failed to capture screenshot for ${url}:`, error.message);
-        throw error;
+        return { success: false, message: `Failed to capture ${url}`, error: error.message };
     } finally {
         await browser.close();
     }

@@ -29,10 +29,10 @@ exports.handler = async (event) => {
             const filePath = path.join(SCREENSHOTS_DIR, fileName);
 
             console.log(`Capturing screenshot for ${url}`);
-            await takeScreenshot(url, filePath);
+            const result = await takeScreenshot(url, filePath);
 
             // Upload to S3
-            if (s3BucketName) {
+            if (s3BucketName && result.success) {
                 const s3Key = `screenshots/${fileName}`;
                 console.log(`Uploading ${filePath} to S3`);
                 await uploadToS3(filePath, s3Key);

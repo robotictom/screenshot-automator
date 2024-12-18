@@ -53,10 +53,10 @@ function sanitizeWebsiteName(name) {
             const filePath = path.join(SCREENSHOTS_DIR, fileName);
 
             log(`Capturing screenshot for ${url}`);
-            await takeScreenshot(url, filePath);
+            const result = await takeScreenshot(url, filePath);
 
-            // Upload to S3 only if --upload flag is used
-            if (shouldUpload && s3BucketName) {
+            // Upload to S3 only if --upload flag is used and screenshot is successful
+            if (shouldUpload && s3BucketName && result.success) {
                 const s3Key = `screenshots/${fileName}`;
                 log(`Uploading ${filePath} to S3`);
                 await uploadToS3(filePath, s3Key);
